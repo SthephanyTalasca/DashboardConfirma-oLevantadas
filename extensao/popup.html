@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+    }
+    h1 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stats {
+      background: rgba(255,255,255,0.1);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .stat-label { opacity: 0.7; font-size: 13px; }
+    .stat-value { font-weight: 600; }
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: transform 0.1s;
+    }
+    button:hover { transform: scale(1.02); }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.15);
+      color: white;
+    }
+    .btn-danger {
+      background: rgba(220, 53, 69, 0.8);
+      color: white;
+    }
+    .status {
+      font-size: 11px;
+      opacity: 0.6;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 HubSpot Reader</h1>
+  
+  <div class="stats">
+    <div class="stat-row">
+      <span class="stat-label">Negócios capturados:</span>
+      <span class="stat-value" id="total">0</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Última atualização:</span>
+      <span class="stat-value" id="ultima">-</span>
+    </div>
+  </div>
+  
+  <button class="btn-primary" id="btnCopiar">📋 Copiar JSON</button>
+  <button class="btn-secondary" id="btnAbrir">🌐 Abrir Dashboard</button>
+  <button class="btn-danger" id="btnLimpar">🗑️ Limpar dados</button>
+  
+  <div class="status" id="status">Extensão ativa</div>
+
+  <script>
+    // Carrega estatísticas
+    function carregarStats() {
+      chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.scripting.executeScript({
+          target: {tabId: tabs[0].id},
+          func: () => {
+            return {
+              negocios: JSON.parse(localStorage.getItem('hubspot_negocios') || '[]'),
+              ultima: localStorage.getItem('hubspot_ultima_atualizacao')
+            };
+          }
+        }, (results) => {
+          if (results && results[0]) {
+            const data = results[0].result;
+            document.getElementById('total').textContent = data.negocios.length;
+            
+            if (data.ultima) {
+              const d = new Date(data.ultima);
+              document.getElementById('ultima').textContent = 
+                d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+            }
+          }
+        });
+      });
+    }
+    
+    // Copiar JSON
+    document.getElementById('btnCopiar').onclick = () => {
+      chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.scripting.executeScript({
+          target: {tabId: tabs[0].id},
+          func: () => localStorage.getItem('hubspot_negocios') || '[]'
+        }, (results) => {
+          if (results && results[0]) {
+            navigator.clipboard.writeText(results[0].result);
+            document.getElementById('status').textContent = '✅ Copiado!';
+            setTimeout(() => document.getElementById('status').textContent = 'Extensão ativa', 2000);
+          }
+        });
+      });
+    };
+    
+    // Abrir dashboard
+    document.getElementById('btnAbrir').onclick = () => {
+      chrome.tabs.create({url: chrome.runtime.getURL('dashboard.html')});
+    };
+    
+    // Limpar dados
+    document.getElementById('btnLimpar').onclick = () => {
+      if (confirm('Limpar todos os dados capturados?')) {
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+          chrome.scripting.executeScript({
+            target: {tabId: tabs[0].id},
+            func: () => {
+              localStorage.removeItem('hubspot_negocios');
+              localStorage.removeItem('hubspot_ultima_atualizacao');
+            }
+          }, () => {
+            carregarStats();
+            document.getElementById('status').textContent = '🗑️ Dados limpos!';
+          });
+        });
+      }
+    };
+    
+    carregarStats();
+  </script>
+</body>
+</html>
