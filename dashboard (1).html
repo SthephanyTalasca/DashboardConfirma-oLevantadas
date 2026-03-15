@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Negócios HubSpot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-card-hover: #1a1a25;
+      --accent-primary: #6366f1;
+      --accent-secondary: #22d3ee;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-pink: #ec4899;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: rgba(255,255,255,0.08);
+      --glow: rgba(99, 102, 241, 0.4);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* Background animado */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(34, 211, 238, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    /* Header */
+    .header {
+      padding: 24px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 10, 15, 0.8);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 20px var(--glow);
+    }
+    
+    .logo h1 {
+      font-size: 22px;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--accent-success);
+    }
+    
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));
+      color: white;
+      box-shadow: 0 4px 15px var(--glow);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px var(--glow);
+    }
+    
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-primary);
+    }
+    
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 30px 40px;
+    }
+    
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-primary);
+      box-shadow: 0 10px 40px rgba(99, 102, 241, 0.2);
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .stat-card:hover::before {
+      opacity: 1;
+    }
+    
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .stat-change {
+      font-size: 13px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .stat-change.positive { color: var(--accent-success); }
+    .stat-change.negative { color: #ef4444; }
+    
+    /* Main Content */
+    .main {
+      padding: 0 40px 40px;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: linear-gradient(180deg, var(--accent-primary), var(--accent-pink));
+      border-radius: 2px;
+    }
+    
+    /* Filtros */
+    .filters {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-chip {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .filter-chip:hover, .filter-chip.active {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: white;
+    }
+    
+    /* Tabela */
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th {
+      text-align: left;
+      padding: 16px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    tr:hover td {
+      background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .cliente-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .cliente-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .cliente-info h4 {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+    
+    .cliente-info span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .badge-sucesso {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .badge-ceccon {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-primary);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    
+    .badge-outro {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .responsavel {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .responsavel-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-card-hover);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .tipo-emoji {
+      font-size: 18px;
+    }
+    
+    .timestamp {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 40px;
+    }
+    
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+    
+    .empty-state h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: var(--text-secondary);
+    }
+    
+    .empty-state p {
+      color: var(--text-muted);
+      max-width: 400px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    
+    /* Input JSON */
+    .json-input-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+    
+    .json-input-section h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-primary);
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+    
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+    
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+    
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--accent-success);
+      color: white;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-weight: 500;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        padding: 16px 20px;
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .stats-grid {
+        padding: 20px;
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .main {
+        padding: 0 20px 20px;
+      }
+      
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      
+      .table-container {
+        overflow-x: auto;
+      }
+      
+      table {
+        min-width: 600px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">📊</div>
+      <h1>Negócios HubSpot</h1>
+    </div>
+    <div class="header-actions">
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        <span>Atualização automática</span>
+      </div>
+      <button class="btn btn-secondary" onclick="exportarCSV()">
+        📥 Exportar CSV
+      </button>
+      <button class="btn btn-primary" onclick="atualizarDados()">
+        🔄 Atualizar
+      </button>
+    </div>
+  </header>
+  
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total de Negócios</div>
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-change positive" id="statHoje">+0 hoje</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Equipe Sucesso</div>
+      <div class="stat-value" id="statSucesso">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Equipe Ceccon</div>
+      <div class="stat-value" id="statCeccon">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Última Atualização</div>
+      <div class="stat-value" id="statUltima" style="font-size: 18px;">--:--</div>
+    </div>
+  </section>
+  
+  <main class="main">
+    <!-- Input para colar JSON manualmente -->
+    <div class="json-input-section">
+      <h3>📋 Colar dados da extensão</h3>
+      <textarea id="jsonInput" placeholder='Cole aqui o JSON copiado da extensão do Slack...
+
+Exemplo:
+[{"cliente": "Wesley", "equipe": "Sucesso", "responsavel": "Brayan", "tipo": "⭐"}]'></textarea>
+      <button class="btn btn-primary" onclick="carregarJSON()">
+        ✨ Carregar dados
+      </button>
+    </div>
+    
+    <div class="section-header">
+      <h2 class="section-title">Negócios Recentes</h2>
+      <div class="filters">
+        <span class="filter-chip active" onclick="filtrar('todos', this)">Todos</span>
+        <span class="filter-chip" onclick="filtrar('sucesso', this)">Sucesso</span>
+        <span class="filter-chip" onclick="filtrar('ceccon', this)">Ceccon</span>
+        <span class="filter-chip" onclick="filtrar('hoje', this)">Hoje</span>
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Equipe</th>
+            <th>Responsável</th>
+            <th>Tipo</th>
+            <th>Data/Hora</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaBody">
+          <!-- Dados serão inseridos aqui -->
+        </tbody>
+      </table>
+      
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📭</div>
+        <h3>Nenhum negócio ainda</h3>
+        <p>Cole o JSON da extensão do Slack acima ou aguarde os dados serem sincronizados automaticamente.</p>
+      </div>
+    </div>
+  </main>
+  
+  <div class="toast" id="toast">✅ Dados carregados!</div>
+
+  <script>
+    // Dados em memória
+    let negocios = [];
+    let filtroAtual = 'todos';
+    
+    // Carrega dados do localStorage se existir
+    function carregarDoStorage() {
+      const dados = localStorage.getItem('hubspot_negocios');
+      if (dados) {
+        try {
+          negocios = JSON.parse(dados);
+          renderizar();
+        } catch (e) {
+          console.error('Erro ao carregar dados:', e);
+        }
+      }
+    }
+    
+    // Carrega JSON colado manualmente
+    function carregarJSON() {
+      const input = document.getElementById('jsonInput').value.trim();
+      if (!input) {
+        alert('Cole o JSON primeiro!');
+        return;
+      }
+      
+      try {
+        const dados = JSON.parse(input);
+        if (Array.isArray(dados)) {
+          negocios = dados;
+          localStorage.setItem('hubspot_negocios', JSON.stringify(negocios));
+          localStorage.setItem('hubspot_ultima_atualizacao', new Date().toISOString());
+          renderizar();
+          mostrarToast('✅ ' + dados.length + ' negócios carregados!');
+          document.getElementById('jsonInput').value = '';
+        } else {
+          alert('O JSON precisa ser um array de objetos');
+        }
+      } catch (e) {
+        alert('JSON inválido! Verifique o formato.');
+        console.error(e);
+      }
+    }
+    
+    // Renderiza a tabela
+    function renderizar() {
+      const tbody = document.getElementById('tabelaBody');
+      const emptyState = document.getElementById('emptyState');
+      
+      // Aplica filtro
+      let dados = negocios;
+      if (filtroAtual === 'sucesso') {
+        dados = negocios.filter(n => n.equipe?.toLowerCase().includes('sucesso') && !n.equipe?.toLowerCase().includes('ceccon'));
+      } else if (filtroAtual === 'ceccon') {
+        dados = negocios.filter(n => n.equipe?.toLowerCase().includes('ceccon'));
+      } else if (filtroAtual === 'hoje') {
+        const hoje = new Date().toDateString();
+        dados = negocios.filter(n => new Date(n.dataCaptura || n.timestamp).toDateString() === hoje);
+      }
+      
+      if (dados.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        atualizarStats();
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      
+      tbody.innerHTML = dados.map(n => {
+        const inicial = (n.cliente || '?')[0].toUpperCase();
+        const inicialResp = (n.responsavel || '?')[0].toUpperCase();
+        const badgeClass = getBadgeClass(n.equipe);
+        const dataFormatada = formatarData(n.dataCaptura || n.timestamp);
+        
+        return `
+          <tr>
+            <td>
+              <div class="cliente-cell">
+                <div class="cliente-avatar">${inicial}</div>
+                <div class="cliente-info">
+                  <h4>${n.cliente || 'N/A'}</h4>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge ${badgeClass}">${n.equipe || 'N/A'}</span>
+            </td>
+            <td>
+              <div class="responsavel">
+                <div class="responsavel-avatar">${inicialResp}</div>
+                <span>${n.responsavel || 'N/A'}</span>
+              </div>
+            </td>
+            <td>
+              <span class="tipo-emoji">${n.tipo || '⭐'}</span>
+            </td>
+            <td>
+              <span class="timestamp">${dataFormatada}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      
+      atualizarStats();
+    }
+    
+    function getBadgeClass(equipe) {
+      if (!equipe) return 'badge-outro';
+      const eq = equipe.toLowerCase();
+      if (eq.includes('ceccon')) return 'badge-ceccon';
+      if (eq.includes('sucesso')) return 'badge-sucesso';
+      return 'badge-outro';
+    }
+    
+    function formatarData(data) {
+      if (!data) return '--';
+      try {
+        const d = new Date(data);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+      } catch {
+        return data;
+      }
+    }
+    
+    function atualizarStats() {
+      document.getElementById('statTotal').textContent = negocios.length;
+      
+      const sucesso = negocios.filter(n => n.equipe?.toLowerCase().includes('sucesso') && !n.equipe?.toLowerCase().includes('ceccon')).length;
+      const ceccon = negocios.filter(n => n.equipe?.toLowerCase().includes('ceccon')).length;
+      
+      document.getElementById('statSucesso').textContent = sucesso;
+      document.getElementById('statCeccon').textContent = ceccon;
+      
+      const hoje = new Date().toDateString();
+      const hj = negocios.filter(n => new Date(n.dataCaptura || n.timestamp).toDateString() === hoje).length;
+      document.getElementById('statHoje').textContent = '+' + hj + ' hoje';
+      
+      const ultima = localStorage.getItem('hubspot_ultima_atualizacao');
+      if (ultima) {
+        const d = new Date(ultima);
+        document.getElementById('statUltima').textContent = d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+      }
+    }
+    
+    function filtrar(tipo, el) {
+      filtroAtual = tipo;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderizar();
+    }
+    
+    function atualizarDados() {
+      carregarDoStorage();
+      mostrarToast('🔄 Dados atualizados!');
+    }
+    
+    function exportarCSV() {
+      if (negocios.length === 0) {
+        alert('Nenhum dado para exportar!');
+        return;
+      }
+      
+      const headers = ['Cliente', 'Equipe', 'Responsável', 'Tipo', 'Data'];
+      const rows = negocios.map(n => [
+        n.cliente || '',
+        n.equipe || '',
+        n.responsavel || '',
+        n.tipo || '',
+        formatarData(n.dataCaptura || n.timestamp)
+      ]);
+      
+      const csv = [headers, ...rows].map(r => r.map(c => '"' + (c || '').replace(/"/g, '""') + '"').join(',')).join('\n');
+      
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'negocios_hubspot_' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      mostrarToast('📥 CSV exportado!');
+    }
+    
+    function mostrarToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    
+    // Escuta atualizações da extensão
+    window.addEventListener('hubspot_atualizado', (e) => {
+      carregarDoStorage();
+      mostrarToast('✨ ' + e.detail.novos + ' novos negócios!');
+    });
+    
+    // Storage event para sincronizar entre abas
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'hubspot_negocios') {
+        carregarDoStorage();
+      }
+    });
+    
+    // Inicializa
+    carregarDoStorage();
+    
+    // Auto-refresh a cada 30 segundos
+    setInterval(carregarDoStorage, 30000);
+  </script>
+</body>
+</html>
