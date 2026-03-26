@@ -45,45 +45,67 @@ function parsearMensagemHubSpot(elemento, textoCompleto) {
     // Pega o timestamp
     const timeEl = elemento.querySelector('time, [data-qa="message_time"]');
     const timestamp = timeEl ? timeEl.getAttribute('datetime') || timeEl.textContent : new Date().toISOString();
-    
+
     // Divide o texto em linhas para extrair os campos
     const linhas = textoCompleto
       .split('\n')
       .map(l => l.trim())
-      .filter(l => l && !l.includes('Exibir contato') && !l.includes('Resumir contato'));
-    
+      .filter(l => l &&
+        !l.includes('Exibir contato') &&
+        !l.includes('Resumir contato') &&
+        !l.includes('Ver no HubSpot') &&
+        !l.includes('Abrir no HubSpot')
+      );
+
     // Padrão esperado:
     // HubSpot APP HHhMM
     // Negócio criado! ⭐
     // Nome do Cliente
     // Tipo/Equipe (Sucesso, CecconSucesso, etc)
     // Nome do Responsável
-    
+
     let cliente = '';
     let equipe = '';
     let responsavel = '';
     let tipo = '⭐'; // default
-    
-    // Detecta o tipo pelo emoji
-    if (textoCompleto.includes('✨')) tipo = '✨';
-    if (textoCompleto.includes('🌟')) tipo = '🌟';
-    
+
+    // Detecta o tipo pelo emoji na linha "Negócio criado"
+    const linhaNegocios = linhas.find(l => l.includes('Negócio criado')) || '';
+    if (linhaNegocios.includes('✨') || (textoCompleto.includes('✨') && !linhaNegocios.includes('⭐') && !linhaNegocios.includes('🌟'))) tipo = '✨';
+    if (linhaNegocios.includes('🌟') || (textoCompleto.includes('🌟') && !linhaNegocios.includes('⭐') && !linhaNegocios.includes('✨'))) tipo = '🌟';
+
     // Encontra o índice de "Negócio criado"
     const idxNegocio = linhas.findIndex(l => l.includes('Negócio criado'));
-    
+
     if (idxNegocio !== -1 && linhas.length > idxNegocio + 1) {
-      // Próximas linhas após "Negócio criado"
-      const camposRestantes = linhas.slice(idxNegocio + 1).filter(l => 
-        !l.includes('HubSpot') && 
+      // Linhas após "Negócio criado", filtrando ruído
+      const camposRestantes = linhas.slice(idxNegocio + 1).filter(l =>
+        !l.includes('HubSpot') &&
         !l.includes('APP') &&
-        l.length > 1
+        l.length > 1 &&
+        // Remove linhas que são só emojis ou timestamps (ex: "10h30", "10:30")
+        !/^[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF\s]+$/.test(l) &&
+        !/^\d{1,2}[h:]\d{2}$/.test(l)
       );
-      
-      if (camposRestantes.length >= 1) cliente = camposRestantes[0];
-      if (camposRestantes.length >= 2) equipe = camposRestantes[1];
-      if (camposRestantes.length >= 3) responsavel = camposRestantes[2];
+
+      // Tenta identificar a equipe pelo conteúdo para evitar erro de posição
+      const idxEquipe = camposRestantes.findIndex(l =>
+        /sucesso|ceccon/i.test(l)
+      );
+
+      if (idxEquipe !== -1) {
+        // Ancora pela equipe: cliente é a linha antes, responsável é a linha depois
+        equipe = camposRestantes[idxEquipe];
+        if (idxEquipe > 0) cliente = camposRestantes[idxEquipe - 1];
+        if (idxEquipe + 1 < camposRestantes.length) responsavel = camposRestantes[idxEquipe + 1];
+      } else {
+        // Fallback: usa ordem posicional
+        if (camposRestantes.length >= 1) cliente = camposRestantes[0];
+        if (camposRestantes.length >= 2) equipe = camposRestantes[1];
+        if (camposRestantes.length >= 3) responsavel = camposRestantes[2];
+      }
     }
-    
+
     // Se não conseguiu extrair, tenta método alternativo
     if (!cliente) {
       const matches = textoCompleto.match(/Negócio criado!.*?\n(.+?)\n(.+?)\n(.+?)(\n|$)/s);
@@ -93,7 +115,7 @@ function parsearMensagemHubSpot(elemento, textoCompleto) {
         responsavel = matches[3]?.trim() || '';
       }
     }
-    
+
     // Só retorna se tiver pelo menos o cliente
     if (cliente) {
       return {
@@ -106,7 +128,7 @@ function parsearMensagemHubSpot(elemento, textoCompleto) {
         dataCaptura: new Date().toISOString()
       };
     }
-    
+
     return null;
   } catch (e) {
     console.error('Erro ao parsear mensagem:', e);
